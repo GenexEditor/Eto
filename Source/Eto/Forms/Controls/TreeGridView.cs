@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using Eto.Drawing;
 
 namespace Eto.Forms
 {
@@ -51,6 +52,18 @@ namespace Eto.Forms
 		public TreeGridViewItemCancelEventArgs(ITreeGridItem item)
 		{
 			this.Item = item;
+		}
+	}
+
+	public class TreeGridCell
+	{
+		public object Item { get; }
+		public GridColumn Column { get; }
+
+		internal TreeGridCell(object item, GridColumn column)
+		{
+			Item = item;
+			Column = column;
 		}
 	}
 
@@ -260,6 +273,39 @@ namespace Eto.Forms
 			set { Handler.ContextMenu = value; }
 		}
 
+		/// <summary>
+		/// Refreshes the data, keeping the selection
+		/// </summary>
+		public void RefreshData()
+		{
+			Handler.RefreshData();
+		}
+
+		/// <summary>
+		/// Refreshes the specified item and all its children, keeping the selection if not part of the refreshed nodes
+		/// </summary>
+		/// <param name="item">Item to refresh</param>
+		public void RefreshItem(ITreeGridItem item)
+		{
+			Handler.RefreshItem(item);
+		}
+
+		/// <summary>
+		/// Gets the node at a specified point from the origin of the control
+		/// </summary>
+		/// <remarks>
+		/// Useful for determining which node is under the mouse cursor.
+		/// </remarks>
+		/// <returns>The item from the data store that is displayed at the specified location</returns>
+		/// <param name="point">Point to find the node</param>
+		public TreeGridCell GetCellAt(PointF point)
+		{
+			int column;
+			var item = Handler.GetCellAt(point, out column);
+			return new TreeGridCell(item, column >= 0 ? Columns[column] : null);
+		}
+
+
 		static readonly object callback = new Callback();
 
 		/// <summary>
@@ -380,6 +426,13 @@ namespace Eto.Forms
 			/// </summary>
 			/// <value>The selected item.</value>
 			ITreeGridItem SelectedItem { get; set; }
+
+
+			void RefreshData();
+
+			void RefreshItem(ITreeGridItem item);
+
+			ITreeGridItem GetCellAt(PointF location, out int column);
 		}
 	}
 }

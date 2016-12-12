@@ -9,63 +9,164 @@ namespace Eto.Test.Sections.Controls
 	public class TreeGridViewSection : Scrollable
 	{
 		int expanded;
-		CheckBox allowCollapsing;
-		CheckBox allowExpanding;
-		static Image Image = TestIcons.TestIcon;
+		readonly CheckBox allowCollapsing;
+		readonly CheckBox allowExpanding;
+		readonly TreeGridView treeView;
+		int newItemCount;
+		static readonly Image Image = TestIcons.TestIcon;
+		Label hoverNodeLabel;
+		bool cancelLabelEdit;
 
 		public TreeGridViewSection()
 		{
 			var layout = new DynamicLayout { DefaultSpacing = new Size(5, 5), Padding = new Padding(10) };
+			treeView = ImagesAndMenu();
 
-			layout.BeginHorizontal();
-			layout.Add(new Label());
-			layout.BeginVertical();
-			layout.BeginHorizontal();
-			layout.Add(null);
-			layout.Add(allowExpanding = new CheckBox { Text = "Allow Expanding", Checked = true });
-			layout.Add(allowCollapsing = new CheckBox { Text = "Allow Collapsing", Checked = true });
-			layout.Add(null);
-			layout.EndHorizontal();
-			layout.EndVertical();
-			layout.EndHorizontal();
+			layout.AddSeparateRow(
+				null,
+				allowExpanding = new CheckBox { Text = "Allow Expanding", Checked = true },
+				allowCollapsing = new CheckBox { Text = "Allow Collapsing", Checked = true },
+				RefreshButton(),
+				null
+			);
+			layout.AddSeparateRow(null, InsertButton(), AddChildButton(), RemoveButton(), ExpandButton(), CollapseButton(), null);
+			layout.AddSeparateRow(null, EnabledCheck(), AllowMultipleSelect(), null);
 
-			layout.AddRow(new Label { Text = "Simple" }, Default());
-
-			layout.AddRow(new Label { Text = "With Images\n&& Context Menu" }, ImagesAndMenu());
-			layout.AddRow(new Label { Text = "Disabled" }, Disabled());
-
-			layout.Add(null, false, true);
+			layout.Add(treeView, yscale: true);
+			layout.Add(HoverNodeLabel());
 
 			Content = layout;
 		}
 
-		TreeGridItem CreateSimpleTreeItem(int level, string name)
+		Control HoverNodeLabel()
 		{
-			var item = new TreeGridItem
+			hoverNodeLabel = new Label();
+
+			treeView.MouseMove += (sender, e) =>
 			{
-				Expanded = expanded++ % 2 == 0
+				var cell = treeView.GetCellAt(e.Location);
+				if (cell != null)
+					hoverNodeLabel.Text = $"Item under mouse: {((TreeGridItem)cell.Item)?.Values[1] ?? "(no item)"}, Column: {cell.Column?.HeaderText ?? "(no column)"}";
 			};
-			item.Values = new object[] { "col 0 - " + name };
-			if (level < 4)
-			{
-				for (int i = 0; i < 4; i++)
-				{
-					item.Children.Add(CreateSimpleTreeItem(level + 1, name + " " + i));
-				}
-			}
-			return item;
+
+			return hoverNodeLabel;
 		}
 
-		Control Default()
+		Control InsertButton()
 		{
-			var control = new TreeGridView
+			var control = new Button { Text = "Insert" };
+			control.Click += (sender, e) =>
 			{
-				Size = new Size(100, 150),
-				ShowHeader = false
+				var item = treeView.SelectedItem as TreeGridItem;
+				var parent = (item?.Parent ?? (ITreeGridItem)treeView.DataStore) as TreeGridItem;
+				if (parent != null)
+				{
+					var index = item != null ? parent.Children.IndexOf(item) : 0;
+					parent.Children.Insert(index, CreateComplexTreeItem(0, "New Item " + newItemCount++, null));
+					if (item != null)
+						treeView.RefreshItem(parent);
+					else
+						treeView.RefreshData();
+				}
 			};
-			control.Columns.Add(new GridColumn { DataCell = new TextBoxCell(0) });
-			control.DataStore = CreateSimpleTreeItem(0, "");
-			LogEvents(control);
+			return control;
+		}
+
+		Control AddChildButton()
+		{
+			var control = new Button { Text = "Add Child" };
+			control.Click += (sender, e) =>
+			{
+				var item = treeView.SelectedItem as TreeGridItem;
+				if (item != null)
+				{
+					item.Children.Add(CreateComplexTreeItem(0, "New Item " + newItemCount++, null));
+					treeView.RefreshItem(item);
+				}
+			};
+			return control;
+		}
+
+		Control RemoveButton()
+		{
+			var control = new Button { Text = "Remove" };
+			control.Click += (sender, e) =>
+			{
+				var item = treeView.SelectedItem as TreeGridItem;
+				if (item != null)
+				{
+					var parent = item.Parent as TreeGridItem;
+					parent.Children.Remove(item);
+					if (parent.Parent == null)
+						treeView.RefreshData();
+					else
+						treeView.RefreshItem(parent);
+				}
+			};
+			return control;
+		}
+
+		Control RefreshButton()
+		{
+			var control = new Button { Text = "Refresh" };
+			control.Click += (sender, e) =>
+			{
+				foreach (var tree in Children.OfType<TreeGridView>())
+				{
+					tree.RefreshData();
+				}
+			};
+			return control;
+		}
+
+		Control ExpandButton()
+		{
+			var control = new Button { Text = "Expand" };
+			control.Click += (sender, e) =>
+			{
+				var item = treeView.SelectedItem;
+				if (item != null)
+				{
+					item.Expanded = true;
+					treeView.RefreshItem(item);
+				}
+			};
+			return control;
+		}
+
+		Control CollapseButton()
+		{
+			var control = new Button { Text = "Collapse" };
+			control.Click += (sender, e) =>
+			{
+				var item = treeView.SelectedItem;
+				if (item != null)
+				{
+					item.Expanded = false;
+					treeView.RefreshItem(item);
+				}
+			};
+			return control;
+		}
+
+		Control CancelLabelEdit()
+		{
+			var control = new CheckBox { Text = "Cancel Edit" };
+			control.CheckedChanged += (sender, e) => cancelLabelEdit = control.Checked ?? false;
+			return control;
+		}
+
+		Control EnabledCheck()
+		{
+			var control = new CheckBox { Text = "Enabled", Checked = treeView.Enabled };
+			control.CheckedChanged += (sender, e) => treeView.Enabled = control.Checked ?? false;
+			return control;
+		}
+
+		Control AllowMultipleSelect()
+		{
+			var control = new CheckBox { Text = "AllowMultipleSelection" };
+			control.CheckedBinding.Bind(treeView, t => t.AllowMultipleSelection);
 			return control;
 		}
 
@@ -86,7 +187,7 @@ namespace Eto.Test.Sections.Controls
 			return item;
 		}
 
-		Control ImagesAndMenu()
+		TreeGridView ImagesAndMenu()
 		{
 			var control = new TreeGridView
 			{
@@ -114,13 +215,6 @@ namespace Eto.Test.Sections.Controls
 
 			control.DataStore = CreateComplexTreeItem(0, "", Image);
 			LogEvents(control);
-			return control;
-		}
-
-		Control Disabled()
-		{
-			var control = ImagesAndMenu();
-			control.Enabled = false;
 			return control;
 		}
 
@@ -165,7 +259,7 @@ namespace Eto.Test.Sections.Controls
 			{
 				Log.Write(control, "Collapsed, Item: {0}", GetDescription(e.Item));
 			};
-			control.ColumnHeaderClick += delegate(object sender, GridColumnEventArgs e)
+			control.ColumnHeaderClick += delegate (object sender, GridColumnEventArgs e)
 			{
 				Log.Write(control, "Column Header Clicked: {0}", e.Column);
 			};

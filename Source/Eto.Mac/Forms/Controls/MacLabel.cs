@@ -74,6 +74,7 @@ namespace Eto.Mac.Forms.Controls
 					rect.Y = theRect.Y + (theRect.Height - titleSize.Height);
 					break;
 			}
+			rect.Y = theRect.Y;
 			return rect;
 		}
 	}

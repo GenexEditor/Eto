@@ -3,7 +3,7 @@ using Eto.Forms;
 using System.Collections.Generic;
 using System.Linq;
 using Eto.Mac.Forms.Cells;
-
+using Eto.Drawing;
 
 #if XAMMAC2
 using AppKit;
@@ -224,9 +224,10 @@ namespace Eto.Mac.Forms.Controls
 				
 				EtoTreeItem etoItem;
 				if (!items.TryGetValue((int)childIndex, out etoItem)) {
+					
 					var parentItem = myitem != null ? (ITreeGridStore<ITreeGridItem>)myitem.Item : Handler.store;
 					etoItem = new EtoTreeItem{ Item = parentItem [(int)childIndex] };
-					Handler.cachedItems.Add (etoItem.Item, etoItem);
+					Handler.cachedItems[etoItem.Item] = etoItem;
 					items.Add((int)childIndex, etoItem);
 				}
 				return etoItem;
@@ -471,6 +472,77 @@ namespace Eto.Mac.Forms.Controls
 		{
 			var item = Control.ItemAtRow(row) as EtoTreeItem;
 			return item != null ? item.Item : null;
+		}
+
+		public void RefreshData()
+		{
+			//selectionChanging = true;
+			var selectedItem = SelectedItem;
+
+			var contentView = ScrollView.ContentView;
+			var loc = contentView.Bounds.Location;
+			if (!Control.IsFlipped)
+				loc.Y = Control.Frame.Height - contentView.Frame.Height - loc.Y;
+
+			topitems.Clear();
+			cachedItems.Clear();
+			Control.ReloadData();
+			ExpandItems(null);
+			//PerformSelect(selectedItem, false);
+
+			if (Control.IsFlipped)
+				contentView.ScrollToPoint(loc);
+			else
+				contentView.ScrollToPoint(new CGPoint(loc.X, Control.Frame.Height - contentView.Frame.Height - loc.Y));
+
+			ScrollView.ReflectScrolledClipView(contentView);
+
+			//selectionChanging = false;
+		}
+
+		public void RefreshItem(ITreeGridItem item)
+		{
+			EtoTreeItem myitem;
+			if (cachedItems.TryGetValue(item, out myitem))
+			{
+				var row = Control.RowForItem(myitem);
+				if (row >= 0)
+					topitems.Remove((int)row);
+				myitem.Items.Clear();
+				SetItemExpansion(myitem);
+				Control.ReloadItem(myitem, true);
+				ExpandItems(myitem);
+			}
+			else
+				RefreshData();
+		}
+
+		void SetItemExpansion(NSObject parent)
+		{
+			//raiseExpandEvents = false;
+			var item = parent as EtoTreeItem;
+			if (item != null && item.Item.Expandable && item.Item.Expanded != Control.IsItemExpanded(item))
+			{
+				if (item.Item.Expanded)
+					Control.ExpandItem(item);
+				else
+					Control.CollapseItem(item, false);
+			}
+			//raiseExpandEvents = true;
+		}
+
+		public ITreeGridItem GetCellAt(PointF location, out int column)
+		{
+			location += ScrollView.ContentView.Bounds.Location.ToEto();
+			column = (int)Control.GetColumn(location.ToNS());
+			var row = Control.GetRow(location.ToNS());
+			if (row >= 0)
+			{
+				var item = Control.ItemAtRow(row) as EtoTreeItem;
+				if (item != null)
+					return item.Item;
+			}
+			return null;
 		}
 	}
 }

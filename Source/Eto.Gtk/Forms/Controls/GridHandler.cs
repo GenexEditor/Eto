@@ -451,6 +451,12 @@ namespace Eto.GtkSharp.Forms.Controls
 			}
 		}
 
+		static readonly object Border_Key = new object();
+		public BorderType Border
+		{
+			get { return Widget.Properties.Get(Border_Key, BorderType.Bezel); }
+			set { Widget.Properties.Set(Border_Key, value, () => Control.ShadowType = value.ToGtk(), BorderType.Bezel); }
+		}
 	}
 }
 

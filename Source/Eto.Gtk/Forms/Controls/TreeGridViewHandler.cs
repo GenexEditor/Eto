@@ -3,6 +3,7 @@ using Eto.Forms;
 using System.Collections.Generic;
 using Eto.GtkSharp.Forms.Cells;
 using System.Linq;
+using Eto.Drawing;
 
 namespace Eto.GtkSharp.Forms.Controls
 {
@@ -36,7 +37,7 @@ namespace Eto.GtkSharp.Forms.Controls
 			WeakReference handler;
 			public TreeGridViewHandler Handler { get { return (TreeGridViewHandler)handler.Target; } set { handler = new WeakReference(value); } }
 
-			void ExpandItems(ITreeGridStore<ITreeGridItem> store, Gtk.TreePath path)
+			public void ExpandItems(ITreeGridStore<ITreeGridItem> store, Gtk.TreePath path)
 			{
 				for (int i = 0; i < store.Count; i++)
 				{
@@ -51,7 +52,7 @@ namespace Eto.GtkSharp.Forms.Controls
 				}
 			}
 
-			void ExpandItems()
+			public void ExpandItems()
 			{
 				var store = Handler.collection.Collection;
 				var path = new Gtk.TreePath();
@@ -418,7 +419,7 @@ namespace Eto.GtkSharp.Forms.Controls
 				if (model.IterNthChild(out iter, parent, i))
 				{
 					var childPath = model.GetPath(iter);
-					
+
 					if (Tree.GetRowExpanded(childPath))
 					{
 						count += GetCount(iter, -1);
@@ -427,6 +428,50 @@ namespace Eto.GtkSharp.Forms.Controls
 				count++;
 			}
 			return count;
+		}
+
+		public void RefreshData()
+		{
+			UpdateModel();
+			collection.ExpandItems();
+		}
+
+		public void RefreshItem(ITreeGridItem item)
+		{
+			var tree = Tree;
+			var path = model.GetPathFromItem(item);
+			if (path != null && path.Depth > 0 && !object.ReferenceEquals(item, collection.Collection))
+			{
+				Gtk.TreeIter iter;
+				tree.Model.GetIter(out iter, path);
+				tree.Model.EmitRowChanged(path, iter);
+				tree.Model.EmitRowHasChildToggled(path, iter);
+				//cancelExpandCollapseEvents = true;
+				if (item.Expanded)
+				{
+					tree.CollapseRow(path);
+					tree.ExpandRow(path, false);
+					collection.ExpandItems((ITreeGridStore<ITreeGridItem>)item, path);
+				}
+				else
+					tree.CollapseRow(path);
+				//cancelExpandCollapseEvents = false;
+			}
+			else
+				RefreshData();
+		}
+
+		public ITreeGridItem GetCellAt(PointF location, out int column)
+		{
+			Gtk.TreePath path;
+			Gtk.TreeViewColumn col;
+			if (Tree.GetPathAtPos((int)location.X, (int)location.Y, out path, out col))
+			{
+				column = Array.IndexOf(Tree.Columns, col);
+				return model.GetItemAtPath(path);
+			}
+			column = -1;
+			return null;
 		}
 
 		public override IEnumerable<int> SelectedRows
