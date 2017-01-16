@@ -485,6 +485,14 @@ namespace Eto.Wpf.Forms.Controls
 			}
 		}
 
+		static object Border_Key = new object();
+
+		public BorderType Border
+		{
+			get { return Widget.Properties.Get(Border_Key, BorderType.Bezel); }
+			set { Widget.Properties.Set(Border, value, () => Control.SetEtoBorderType(value)); }
+		}
+
 		public void ReloadData(IEnumerable<int> rows)
 		{
 			Control.Items.Refresh();

@@ -390,7 +390,6 @@ namespace Eto.GtkSharp.Forms.Controls
 			{
 				return model.GetItemAtPath(path);
 			}
-
 			return null;
 		}
 

@@ -250,23 +250,34 @@ namespace Eto.Mac.Forms.Controls
 		{
 			public WeakReference WeakHandler { get; set; }
 
-			public object Handler
+			public TreeGridViewHandler Handler
 			{ 
-				get { return WeakHandler.Target; }
+				get { return WeakHandler.Target as TreeGridViewHandler; }
 				set { WeakHandler = new WeakReference(value); } 
 			}
 
 			public override void MouseDown(NSEvent theEvent)
 			{
-				var point = ConvertPointFromView(theEvent.LocationInWindow, null);
-
-				int rowIndex = (int)GetRow(point);
-				if (rowIndex >= 0)
+				var handler = Handler;
+				if (handler != null)
 				{
-					int columnIndex = (int)GetColumn(point);
-					var item = (Handler as TreeGridViewHandler).GetItem(rowIndex);
-					var column = columnIndex == -1 || columnIndex > (Handler as TreeGridViewHandler).Widget.Columns.Count ? null : (Handler as TreeGridViewHandler).Widget.Columns[columnIndex];
-					(Handler as TreeGridViewHandler).Callback.OnCellClick((Handler as TreeGridViewHandler).Widget, new GridViewCellEventArgs(column, rowIndex, columnIndex, item));
+					var args = MacConversions.GetMouseEvent(handler.ContainerControl, theEvent, false);
+					if (theEvent.ClickCount >= 2)
+						handler.Callback.OnMouseDoubleClick(handler.Widget, args);
+					else
+						handler.Callback.OnMouseDown(handler.Widget, args);
+					if (args.Handled)
+						return;
+
+					var point = ConvertPointFromView(theEvent.LocationInWindow, null);
+					int rowIndex = (int)GetRow(point);
+					if (rowIndex >= 0)
+					{
+						int columnIndex = (int)GetColumn(point);
+						var item = handler.GetItem(rowIndex);
+						var column = columnIndex == -1 || columnIndex > handler.Widget.Columns.Count ? null : handler.Widget.Columns[columnIndex];
+						handler.Callback.OnCellClick(handler.Widget, new GridViewCellEventArgs(column, rowIndex, columnIndex, item));
+					}
 				}
 
 				base.MouseDown(theEvent);

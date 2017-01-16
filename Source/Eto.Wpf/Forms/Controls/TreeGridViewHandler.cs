@@ -6,6 +6,7 @@ using swm = System.Windows.Media;
 using Eto.Forms;
 using Eto.CustomControls;
 using Eto.Wpf.CustomControls.TreeGridView;
+using Eto.Drawing;
 
 namespace Eto.Wpf.Forms.Controls
 {
@@ -117,6 +118,21 @@ namespace Eto.Wpf.Forms.Controls
 		{
 			RestoreFocus();
 			SkipSelectionChanged = false;
+		}
+
+		public void RefreshData()
+		{
+			throw new NotImplementedException();
+		}
+
+		public void RefreshItem(ITreeGridItem item)
+		{
+			throw new NotImplementedException();
+		}
+
+		public ITreeGridItem GetCellAt(PointF location, out int column)
+		{
+			this.Control.Row
 		}
 	}
 }

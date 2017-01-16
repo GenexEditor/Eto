@@ -30,12 +30,19 @@ namespace Eto.Test.Sections.Controls
 				null
 			);
 			layout.AddSeparateRow(null, InsertButton(), AddChildButton(), RemoveButton(), ExpandButton(), CollapseButton(), null);
-			layout.AddSeparateRow(null, EnabledCheck(), AllowMultipleSelect(), null);
+			layout.AddSeparateRow(null, EnabledCheck(), AllowMultipleSelect(), "Border", CreateBorderType(treeView), null);
 
 			layout.Add(treeView, yscale: true);
 			layout.Add(HoverNodeLabel());
 
 			Content = layout;
+		}
+
+		Control CreateBorderType(TreeGridView grid)
+		{
+			var borderType = new EnumDropDown<BorderType>();
+			borderType.SelectedValueBinding.Bind(grid, g => g.Border);
+			return borderType;
 		}
 
 		Control HoverNodeLabel()
@@ -261,17 +268,35 @@ namespace Eto.Test.Sections.Controls
 			};
 			control.ColumnHeaderClick += delegate (object sender, GridColumnEventArgs e)
 			{
-				Log.Write(control, "Column Header Clicked: {0}", e.Column);
+				Log.Write(control, "ColumnHeaderClick: {0}", e.Column);
 			};
 
 			control.CellClick += (sender, e) =>
 			{
-				Log.Write(control, "Cell Clicked, Row: {0}, Column: {1}, Item: {2}, ColInfo: {3}", e.Row, e.Column, e.Item, e.GridColumn);
+				Log.Write(control, "CellClick, Row: {0}, Column: {1}, Item: {2}, ColInfo: {3}", e.Row, e.Column, e.Item, e.GridColumn);
 			};
 
 			control.CellDoubleClick += (sender, e) =>
 			{
-				Log.Write(control, "Cell Double Clicked, Row: {0}, Column: {1}, Item: {2}, ColInfo: {3}", e.Row, e.Column, e.Item, e.GridColumn);
+				Log.Write(control, "CellDoubleClick, Row: {0}, Column: {1}, Item: {2}, ColInfo: {3}", e.Row, e.Column, e.Item, e.GridColumn);
+			};
+
+			control.MouseDown += (sender, e) =>
+			{
+				var cell = control.GetCellAt(e.Location);
+				Log.Write(control, $"MouseDown, Cell Column: {cell.Column?.HeaderText}, Item: {cell.Item}");
+			};
+
+			control.MouseUp += (sender, e) =>
+			{
+				var cell = control.GetCellAt(e.Location);
+				Log.Write(control, $"MouseUp, Cell Column: {cell.Column?.HeaderText}, Item: {cell.Item}");
+			};
+
+			control.MouseDoubleClick += (sender, e) =>
+			{
+				var cell = control.GetCellAt(e.Location);
+				Log.Write(control, $"MouseDoubleClick, Cell Column: {cell.Column?.HeaderText}, Item: {cell.Item}");
 			};
 		}
 	}
