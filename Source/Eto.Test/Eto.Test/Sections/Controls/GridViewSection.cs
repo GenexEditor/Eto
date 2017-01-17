@@ -100,6 +100,17 @@ namespace Eto.Test.Sections.Controls
 							null
 						}
 					},
+					new StackLayout
+					{
+						Orientation = Orientation.Horizontal,
+						Spacing = 5,
+						Items =
+						{
+							null,
+							ReloadDataButton(grid),
+							null
+						}
+					},
 					CreateSearchBox(filtered)
 				}
 			};
@@ -129,6 +140,13 @@ namespace Eto.Test.Sections.Controls
 		{
 			var control = new CheckBox { Text = "ShowHeader" };
 			control.CheckedBinding.Bind(grid, r => r.ShowHeader);
+			return control;
+		}
+
+		Control ReloadDataButton(GridView grid)
+		{
+			var control = new Button { Text = "ReloadData" };
+			control.Click += (sender, e) => grid.ReloadData(grid.SelectedRows);
 			return control;
 		}
 

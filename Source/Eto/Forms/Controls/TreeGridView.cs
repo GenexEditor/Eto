@@ -276,18 +276,18 @@ namespace Eto.Forms
 		/// <summary>
 		/// Refreshes the data, keeping the selection
 		/// </summary>
-		public void RefreshData()
+		public void ReloadData()
 		{
-			Handler.RefreshData();
+			Handler.ReloadData();
 		}
 
 		/// <summary>
 		/// Refreshes the specified item and all its children, keeping the selection if not part of the refreshed nodes
 		/// </summary>
 		/// <param name="item">Item to refresh</param>
-		public void RefreshItem(ITreeGridItem item)
+		public void ReloadItem(ITreeGridItem item)
 		{
-			Handler.RefreshItem(item);
+			Handler.ReloadItem(item);
 		}
 
 		/// <summary>
@@ -428,9 +428,9 @@ namespace Eto.Forms
 			ITreeGridItem SelectedItem { get; set; }
 
 
-			void RefreshData();
+			void ReloadData();
 
-			void RefreshItem(ITreeGridItem item);
+			void ReloadItem(ITreeGridItem item);
 
 			ITreeGridItem GetCellAt(PointF location, out int column);
 		}

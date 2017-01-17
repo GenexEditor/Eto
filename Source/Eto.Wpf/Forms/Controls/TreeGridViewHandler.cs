@@ -122,17 +122,27 @@ namespace Eto.Wpf.Forms.Controls
 
 		public void RefreshData()
 		{
-			throw new NotImplementedException();
+			Control.Items.Refresh();
 		}
 
 		public void RefreshItem(ITreeGridItem item)
 		{
-			throw new NotImplementedException();
+			Control.Items.Refresh();
 		}
 
 		public ITreeGridItem GetCellAt(PointF location, out int column)
 		{
-			this.Control.Row
+			var hitTestResult = swm.VisualTreeHelper.HitTest(Control, location.ToWpf()).VisualHit;
+			var dataGridCell = hitTestResult.GetVisualParent<swc.DataGridCell>();
+			column = dataGridCell?.Column != null ? Control.Columns.IndexOf(dataGridCell.Column) : -1;
+
+			var dataGridRow = hitTestResult.GetVisualParent<swc.DataGridRow>();
+			if (dataGridRow != null)
+			{
+				int row = dataGridRow.GetIndex();
+				return GetItemAtRow(row) as ITreeGridItem;
+			}
+			return null;
 		}
 	}
 }

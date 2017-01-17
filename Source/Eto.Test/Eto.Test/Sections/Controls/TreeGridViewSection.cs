@@ -11,7 +11,7 @@ namespace Eto.Test.Sections.Controls
 		int expanded;
 		readonly CheckBox allowCollapsing;
 		readonly CheckBox allowExpanding;
-		readonly TreeGridView treeView;
+		readonly TreeGridView grid;
 		int newItemCount;
 		static readonly Image Image = TestIcons.TestIcon;
 		Label hoverNodeLabel;
@@ -20,7 +20,7 @@ namespace Eto.Test.Sections.Controls
 		public TreeGridViewSection()
 		{
 			var layout = new DynamicLayout { DefaultSpacing = new Size(5, 5), Padding = new Padding(10) };
-			treeView = ImagesAndMenu();
+			grid = ImagesAndMenu();
 
 			layout.AddSeparateRow(
 				null,
@@ -30,12 +30,20 @@ namespace Eto.Test.Sections.Controls
 				null
 			);
 			layout.AddSeparateRow(null, InsertButton(), AddChildButton(), RemoveButton(), ExpandButton(), CollapseButton(), null);
-			layout.AddSeparateRow(null, EnabledCheck(), AllowMultipleSelect(), "Border", CreateBorderType(treeView), null);
+			layout.AddSeparateRow(null, EnabledCheck(), AllowMultipleSelect(), "Border", CreateBorderType(grid), null);
+			layout.AddSeparateRow(null, ReloadDataButton(grid), null);
 
-			layout.Add(treeView, yscale: true);
+			layout.Add(grid, yscale: true);
 			layout.Add(HoverNodeLabel());
 
 			Content = layout;
+		}
+
+		Control ReloadDataButton(TreeGridView grid)
+		{
+			var control = new Button { Text = "ReloadData" };
+			control.Click += (sender, e) => grid.ReloadData();
+			return control;
 		}
 
 		Control CreateBorderType(TreeGridView grid)
@@ -49,9 +57,9 @@ namespace Eto.Test.Sections.Controls
 		{
 			hoverNodeLabel = new Label();
 
-			treeView.MouseMove += (sender, e) =>
+			grid.MouseMove += (sender, e) =>
 			{
-				var cell = treeView.GetCellAt(e.Location);
+				var cell = grid.GetCellAt(e.Location);
 				if (cell != null)
 					hoverNodeLabel.Text = $"Item under mouse: {((TreeGridItem)cell.Item)?.Values[1] ?? "(no item)"}, Column: {cell.Column?.HeaderText ?? "(no column)"}";
 			};
@@ -64,16 +72,16 @@ namespace Eto.Test.Sections.Controls
 			var control = new Button { Text = "Insert" };
 			control.Click += (sender, e) =>
 			{
-				var item = treeView.SelectedItem as TreeGridItem;
-				var parent = (item?.Parent ?? (ITreeGridItem)treeView.DataStore) as TreeGridItem;
+				var item = grid.SelectedItem as TreeGridItem;
+				var parent = (item?.Parent ?? (ITreeGridItem)grid.DataStore) as TreeGridItem;
 				if (parent != null)
 				{
 					var index = item != null ? parent.Children.IndexOf(item) : 0;
 					parent.Children.Insert(index, CreateComplexTreeItem(0, "New Item " + newItemCount++, null));
 					if (item != null)
-						treeView.RefreshItem(parent);
+						grid.ReloadItem(parent);
 					else
-						treeView.RefreshData();
+						grid.ReloadData();
 				}
 			};
 			return control;
@@ -84,11 +92,11 @@ namespace Eto.Test.Sections.Controls
 			var control = new Button { Text = "Add Child" };
 			control.Click += (sender, e) =>
 			{
-				var item = treeView.SelectedItem as TreeGridItem;
+				var item = grid.SelectedItem as TreeGridItem;
 				if (item != null)
 				{
 					item.Children.Add(CreateComplexTreeItem(0, "New Item " + newItemCount++, null));
-					treeView.RefreshItem(item);
+					grid.ReloadItem(item);
 				}
 			};
 			return control;
@@ -99,15 +107,15 @@ namespace Eto.Test.Sections.Controls
 			var control = new Button { Text = "Remove" };
 			control.Click += (sender, e) =>
 			{
-				var item = treeView.SelectedItem as TreeGridItem;
+				var item = grid.SelectedItem as TreeGridItem;
 				if (item != null)
 				{
 					var parent = item.Parent as TreeGridItem;
 					parent.Children.Remove(item);
 					if (parent.Parent == null)
-						treeView.RefreshData();
+						grid.ReloadData();
 					else
-						treeView.RefreshItem(parent);
+						grid.ReloadItem(parent);
 				}
 			};
 			return control;
@@ -120,7 +128,7 @@ namespace Eto.Test.Sections.Controls
 			{
 				foreach (var tree in Children.OfType<TreeGridView>())
 				{
-					tree.RefreshData();
+					tree.ReloadData();
 				}
 			};
 			return control;
@@ -131,11 +139,11 @@ namespace Eto.Test.Sections.Controls
 			var control = new Button { Text = "Expand" };
 			control.Click += (sender, e) =>
 			{
-				var item = treeView.SelectedItem;
+				var item = grid.SelectedItem;
 				if (item != null)
 				{
 					item.Expanded = true;
-					treeView.RefreshItem(item);
+					grid.ReloadItem(item);
 				}
 			};
 			return control;
@@ -146,11 +154,11 @@ namespace Eto.Test.Sections.Controls
 			var control = new Button { Text = "Collapse" };
 			control.Click += (sender, e) =>
 			{
-				var item = treeView.SelectedItem;
+				var item = grid.SelectedItem;
 				if (item != null)
 				{
 					item.Expanded = false;
-					treeView.RefreshItem(item);
+					grid.ReloadItem(item);
 				}
 			};
 			return control;
@@ -165,15 +173,15 @@ namespace Eto.Test.Sections.Controls
 
 		Control EnabledCheck()
 		{
-			var control = new CheckBox { Text = "Enabled", Checked = treeView.Enabled };
-			control.CheckedChanged += (sender, e) => treeView.Enabled = control.Checked ?? false;
+			var control = new CheckBox { Text = "Enabled", Checked = grid.Enabled };
+			control.CheckedChanged += (sender, e) => grid.Enabled = control.Checked ?? false;
 			return control;
 		}
 
 		Control AllowMultipleSelect()
 		{
 			var control = new CheckBox { Text = "AllowMultipleSelection" };
-			control.CheckedBinding.Bind(treeView, t => t.AllowMultipleSelection);
+			control.CheckedBinding.Bind(grid, t => t.AllowMultipleSelection);
 			return control;
 		}
 

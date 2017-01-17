@@ -37,6 +37,9 @@ namespace Eto.Wpf.Forms.Controls
 		protected bool SkipSelectionChanged { get; set; }
 		protected swc.DataGridColumn CurrentColumn { get; set; }
 
+		public override bool UseMousePreview => true;
+		public override bool UseKeyPreview => true;
+
 		protected GridHandler()
 		{
 			Control = (TControl)new EtoDataGrid
