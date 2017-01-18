@@ -120,19 +120,24 @@ namespace Eto.Wpf.Forms.Controls
 			SkipSelectionChanged = false;
 		}
 
-		public void RefreshData()
+		public void ReloadData()
 		{
-			Control.Items.Refresh();
+			controller.ReloadData();
 		}
 
-		public void RefreshItem(ITreeGridItem item)
+		public void ReloadItem(ITreeGridItem item)
 		{
-			Control.Items.Refresh();
+			controller.ReloadData();
 		}
 
 		public ITreeGridItem GetCellAt(PointF location, out int column)
 		{
-			var hitTestResult = swm.VisualTreeHelper.HitTest(Control, location.ToWpf()).VisualHit;
+			var hitTestResult = swm.VisualTreeHelper.HitTest(Control, location.ToWpf())?.VisualHit;
+			if (hitTestResult == null)
+			{
+				column = -1;
+				return null;
+			}
 			var dataGridCell = hitTestResult.GetVisualParent<swc.DataGridCell>();
 			column = dataGridCell?.Column != null ? Control.Columns.IndexOf(dataGridCell.Column) : -1;
 
