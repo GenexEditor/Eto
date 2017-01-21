@@ -111,12 +111,12 @@ namespace Eto.CustomControls
 		{
 			if (cache.ContainsValue(item))
 			{
-				var found = cache.First(r => object.ReferenceEquals(item, r.Value));
+				var found = cache.First(r => ReferenceEquals(item, r.Value));
 				return found.Key;
 			}
 			for (int i = 0; i < Count; i++)
 			{
-				if (object.ReferenceEquals(this[i], item))
+				if (ReferenceEquals(this[i], item))
 					return i;
 			}
 			return -1;

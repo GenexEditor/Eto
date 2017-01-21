@@ -7,6 +7,8 @@ using Eto.Forms;
 using Eto.CustomControls;
 using Eto.Wpf.CustomControls.TreeGridView;
 using Eto.Drawing;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Eto.Wpf.Forms.Controls
 {
@@ -100,6 +102,8 @@ namespace Eto.Wpf.Forms.Controls
 					Control.UnselectAll();
 			}
 		}
+
+		public IEnumerable<object> SelectedItems => Control.SelectedItems.OfType<object>();
 
 		public override sw.FrameworkElement SetupCell(IGridColumnHandler column, sw.FrameworkElement defaultContent)
 		{
