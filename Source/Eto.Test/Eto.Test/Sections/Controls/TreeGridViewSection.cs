@@ -26,7 +26,7 @@ namespace Eto.Test.Sections.Controls
 				null,
 				allowExpanding = new CheckBox { Text = "Allow Expanding", Checked = true },
 				allowCollapsing = new CheckBox { Text = "Allow Collapsing", Checked = true },
-				RefreshButton(),
+				ShowHeaderCheckBox(grid),
 				null
 			);
 			layout.AddSeparateRow(null, InsertButton(), AddChildButton(), RemoveButton(), ExpandButton(), CollapseButton(), null);
@@ -37,6 +37,13 @@ namespace Eto.Test.Sections.Controls
 			layout.Add(HoverNodeLabel());
 
 			Content = layout;
+		}
+
+		Control ShowHeaderCheckBox(TreeGridView grid)
+		{
+			var control = new CheckBox { Text = "ShowHeader" };
+			control.CheckedBinding.Bind(grid, g => g.ShowHeader);
+			return control;
 		}
 
 		Control ReloadDataButton(TreeGridView grid)
@@ -116,19 +123,6 @@ namespace Eto.Test.Sections.Controls
 						grid.ReloadData();
 					else
 						grid.ReloadItem(parent);
-				}
-			};
-			return control;
-		}
-
-		Control RefreshButton()
-		{
-			var control = new Button { Text = "Refresh" };
-			control.Click += (sender, e) =>
-			{
-				foreach (var tree in Children.OfType<TreeGridView>())
-				{
-					tree.ReloadData();
 				}
 			};
 			return control;
@@ -237,7 +231,8 @@ namespace Eto.Test.Sections.Controls
 		{
 			var treeItem = item as TreeGridItem;
 			if (treeItem != null)
-				return Convert.ToString(string.Join(", ", treeItem.Values.Select(r => Convert.ToString(r))));
+				return Convert.ToString(treeItem.Values[1]);
+				//return Convert.ToString(string.Join(", ", treeItem.Values.Select(r => Convert.ToString(r))));
 			return Convert.ToString(item);
 		}
 
@@ -250,6 +245,7 @@ namespace Eto.Test.Sections.Controls
 			control.SelectionChanged += delegate
 			{
 				Log.Write(control, "SelectionChanged, Rows: {0}", string.Join(", ", control.SelectedRows.Select(r => r.ToString())));
+				Log.Write(control, "\t Items: {0}", string.Join(", ", control.SelectedItems.OfType<TreeGridItem>().Select(r => GetDescription(r))));
 			};
 			control.SelectedItemChanged += delegate
 			{

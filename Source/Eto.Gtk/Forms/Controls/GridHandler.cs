@@ -21,6 +21,8 @@ namespace Eto.GtkSharp.Forms.Controls
 
 		protected Dictionary<int, int> ColumnMap { get { return columnMap; } }
 
+		public override Gtk.Widget EventControl => Tree;
+
 		protected GridHandler()
 		{
 			Control = new Gtk.ScrolledWindow

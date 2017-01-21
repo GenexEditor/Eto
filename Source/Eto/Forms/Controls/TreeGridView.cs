@@ -55,9 +55,21 @@ namespace Eto.Forms
 		}
 	}
 
+	/// <summary>
+	/// Information of a cell in the <see cref="TreeGridView"/>
+	/// </summary>
 	public class TreeGridCell
 	{
+		/// <summary>
+		/// Gets the item associated with the row of the cell.
+		/// </summary>
+		/// <value>The row item.</value>
 		public object Item { get; }
+
+		/// <summary>
+		/// Gets the column of the cell, or null
+		/// </summary>
+		/// <value>The column.</value>
 		public GridColumn Column { get; }
 
 		internal TreeGridCell(object item, GridColumn column)
@@ -252,15 +264,7 @@ namespace Eto.Forms
 		/// <value>The selected items.</value>
 		public override IEnumerable<object> SelectedItems
 		{
-			get
-			{
-				if (DataStore == null)
-					yield break;
-				foreach (var row in SelectedRows)
-				{
-					yield return DataStore[row];
-				}
-			}
+			get { return Handler.SelectedItems; }
 		}
 
 		/// <summary>
@@ -427,11 +431,25 @@ namespace Eto.Forms
 			/// <value>The selected item.</value>
 			ITreeGridItem SelectedItem { get; set; }
 
+			IEnumerable<object> SelectedItems { get; }
 
+			/// <summary>
+			/// Refreshes the data, keeping the selection
+			/// </summary>
 			void ReloadData();
 
+			/// <summary>
+			/// Refreshes the specified item and all its children, keeping the selection if not part of the refreshed nodes
+			/// </summary>
+			/// <param name="item">Item to refresh</param>
 			void ReloadItem(ITreeGridItem item);
 
+			/// <summary>
+			/// Gets the item and column of a location in the control.
+			/// </summary>
+			/// <returns>The item from the data store that is displayed at the specified location</returns>
+			/// <param name="location">Point to find the node</param>
+			/// <param name="column">Column at the location, or -1 if no column (e.g. at the end of the row)</param>
 			ITreeGridItem GetCellAt(PointF location, out int column);
 		}
 	}

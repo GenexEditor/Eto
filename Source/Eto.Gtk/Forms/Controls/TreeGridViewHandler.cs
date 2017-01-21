@@ -15,6 +15,7 @@ namespace Eto.GtkSharp.Forms.Controls
 		CollectionHandler collection;
 		bool? selectCollapsingItem;
 		ITreeGridItem lastSelected;
+		int suppressExpandCollapseEvents;
 
 		protected override void Initialize()
 		{
@@ -39,6 +40,8 @@ namespace Eto.GtkSharp.Forms.Controls
 
 			public void ExpandItems(ITreeGridStore<ITreeGridItem> store, Gtk.TreePath path)
 			{
+				if (store == null)
+					return;
 				for (int i = 0; i < store.Count; i++)
 				{
 					var item = store[i];
@@ -110,6 +113,8 @@ namespace Eto.GtkSharp.Forms.Controls
 		{
 			get
 			{
+				if (AllowMultipleSelection)
+					return SelectedItems.FirstOrDefault() as ITreeGridItem;
 				Gtk.TreeIter iter;
 				return Tree.Selection.GetSelected(out iter) ? model.GetItemAtIter(iter) : null;
 			}
@@ -168,12 +173,9 @@ namespace Eto.GtkSharp.Forms.Controls
 			}
 		}
 
-		protected new TreeGridViewConnector Connector { get { return (TreeGridViewConnector)base.Connector; } }
+		protected new TreeGridViewConnector Connector => (TreeGridViewConnector)base.Connector;
 
-		protected override WeakConnector CreateConnector()
-		{
-			return new TreeGridViewConnector();
-		}
+		protected override WeakConnector CreateConnector() => new TreeGridViewConnector();
 
 		protected class TreeGridViewConnector : GridConnector
 		{
@@ -182,6 +184,8 @@ namespace Eto.GtkSharp.Forms.Controls
 			public void HandleTestExpandRow(object o, Gtk.TestExpandRowArgs args)
 			{
 				var h = Handler;
+				if (h.suppressExpandCollapseEvents > 0)
+					return;
 				var e = new TreeGridViewItemCancelEventArgs(h.GetItem(args.Path) as ITreeGridItem);
 				h.Callback.OnExpanding(h.Widget, e);
 				args.RetVal = e.Cancel;
@@ -190,6 +194,8 @@ namespace Eto.GtkSharp.Forms.Controls
 			public void HandleRowExpanded(object o, Gtk.RowExpandedArgs args)
 			{
 				var h = Handler;
+				if (h.suppressExpandCollapseEvents > 0)
+					return;
 				var e = new TreeGridViewItemEventArgs(h.GetItem(args.Path) as ITreeGridItem);
 				e.Item.Expanded = true;
 				h.Callback.OnExpanded(h.Widget, e);
@@ -198,6 +204,8 @@ namespace Eto.GtkSharp.Forms.Controls
 			public void HandleTestCollapseRow(object o, Gtk.TestCollapseRowArgs args)
 			{
 				var h = Handler;
+				if (h.suppressExpandCollapseEvents > 0)
+					return;
 				var e = new TreeGridViewItemCancelEventArgs(h.GetItem(args.Path) as ITreeGridItem);
 				h.Callback.OnCollapsing(h.Widget, e);
 				args.RetVal = e.Cancel;
@@ -211,6 +219,8 @@ namespace Eto.GtkSharp.Forms.Controls
 			public void HandleRowCollapsed(object o, Gtk.RowCollapsedArgs args)
 			{
 				var h = Handler;
+				if (h.suppressExpandCollapseEvents > 0)
+					return;
 				var e = new TreeGridViewItemEventArgs(h.GetItem(args.Path) as ITreeGridItem);
 				e.Item.Expanded = false;
 				h.Callback.OnCollapsed(h.Widget, e);
@@ -413,30 +423,31 @@ namespace Eto.GtkSharp.Forms.Controls
 		{
 			int rows = upToIndex == -1 ? model.IterNChildren(parent) : upToIndex;
 			int count = 0;
+			var path = model.GetPath(parent);
+			path.AppendIndex(0);
 			for (int i = 0; i < rows; i++)
 			{
 				Gtk.TreeIter iter;
-				if (model.IterNthChild(out iter, parent, i))
+				if (Tree.GetRowExpanded(path))
 				{
-					var childPath = model.GetPath(iter);
-
-					if (Tree.GetRowExpanded(childPath))
+					if (model.IterNthChild(out iter, parent, i))
 					{
 						count += GetCount(iter, -1);
 					}
 				}
+				path.Next();
 				count++;
 			}
 			return count;
 		}
 
-		public void RefreshData()
+		public void ReloadData()
 		{
 			UpdateModel();
 			collection.ExpandItems();
 		}
 
-		public void RefreshItem(ITreeGridItem item)
+		public void ReloadItem(ITreeGridItem item)
 		{
 			var tree = Tree;
 			var path = model.GetPathFromItem(item);
@@ -446,7 +457,7 @@ namespace Eto.GtkSharp.Forms.Controls
 				tree.Model.GetIter(out iter, path);
 				tree.Model.EmitRowChanged(path, iter);
 				tree.Model.EmitRowHasChildToggled(path, iter);
-				//cancelExpandCollapseEvents = true;
+				suppressExpandCollapseEvents++;
 				if (item.Expanded)
 				{
 					tree.CollapseRow(path);
@@ -455,10 +466,10 @@ namespace Eto.GtkSharp.Forms.Controls
 				}
 				else
 					tree.CollapseRow(path);
-				//cancelExpandCollapseEvents = false;
+				suppressExpandCollapseEvents--;
 			}
 			else
-				RefreshData();
+				ReloadData();
 		}
 
 		public ITreeGridItem GetCellAt(PointF location, out int column)
@@ -467,21 +478,15 @@ namespace Eto.GtkSharp.Forms.Controls
 			Gtk.TreeViewColumn col;
 			if (Tree.GetPathAtPos((int)location.X, (int)location.Y, out path, out col))
 			{
-				column = Array.IndexOf(Tree.Columns, col);
+				column = GetColumnOfItem(col);
 				return model.GetItemAtPath(path);
 			}
 			column = -1;
 			return null;
 		}
 
-		public override IEnumerable<int> SelectedRows
-		{
-			get
-			{
-				var rows = Tree.Selection.GetSelectedRows();
-				foreach (var row in rows)
-					yield return GetRowIndexOfPath(row);
-			}
-		}
+		public override IEnumerable<int> SelectedRows => Tree.Selection.GetSelectedRows().Select(GetRowIndexOfPath);
+
+		public IEnumerable<object> SelectedItems => Tree.Selection.GetSelectedRows().Select(GetItem);
 	}
 }
